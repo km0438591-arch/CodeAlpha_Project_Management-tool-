@@ -1,0 +1,18 @@
+<!DOCTYPE html><html><head><title>TaskFlow</title><style>
+body{font-family:Arial;background:#f4f5f7;padding:20px}
+.h{background:#026aa7;color:#fff;padding:15px;border-radius:8px;display:flex;justify-content:space-between}
+.b{display:flex;gap:12px;margin-top:15px;overflow-x:auto}
+.c{background:#ebecf0;padding:10px;width:300px;border-radius:8px;min-height:300px}
+.t{background:#fff;padding:10px;margin:8px 0;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,0.2)}
+input,button{padding:8px;border-radius:5px;border:1px solid #ccc} button{background:#026aa7;color:white;border:none;cursor:pointer}
+</style></head><body>
+<div class="h"><h2>TaskFlow - Project Tool</h2><div><input id="pn" placeholder="Project Name"><button onclick="createP()">Create Project</button></div></div>
+<div id="app"></div>
+<script src="/socket.io/socket.io.js"></script><script>
+const socket=io(); let projects=[];
+async function load(){projects=await (await fetch('/api/projects')).json(); render();}
+async function createP(){let name=document.getElementById('pn').value; if(!name) return alert('Name likho'); await fetch('/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})}); document.getElementById('pn').value=''; load();}
+async function addT(pid){let title=prompt('Task title?'); let ass=prompt('Assign to?'); if(!title) return; await fetch(`/api/projects/${pid}/tasks`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,assignee:ass})}); load();}
+function render(){document.getElementById('app').innerHTML=projects.map(p=>`<h3>${p.name} <button onclick="addT(${p.id})">+ Add Task</button></h3><div class="b"><div class="c"><h4>To Do</h4>${p.tasks.filter(t=>t.status=='todo').map(t=>`<div class="t"><b>${t.title}</b><br><small>Assignee: ${t.assignee}</small></div>`).join('')}</div><div class="c"><h4>In Progress</h4></div><div class="c"><h4>Done</h4></div></div>`).join('');}
+socket.on('update', d=>{projects=d; render();}); load();
+</script></body></html>
